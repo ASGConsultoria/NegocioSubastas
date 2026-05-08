@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subastas BOE Euskadi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#f5f6f8; --white:#fff; --text:#1a1f2e; --text-soft:#5a6478;
+    --text-mute:#8a93a6; --border:#e2e6ed; --border-strong:#c8cfdc;
+    --primary:#2563eb; --primary-dark:#1d4fd9; --primary-light:#eff5ff;
+    --success:#16a34a; --success-light:#dcfce7;
+    --warning:#ea580c; --warning-light:#fff1e6;
+    --neutral:#64748b; --neutral-light:#f1f5f9;
+    --shadow-sm:0 1px 2px rgba(15,23,42,.05);
+    --shadow:0 1px 3px rgba(15,23,42,.08), 0 1px 2px rgba(15,23,42,.04);
+    --shadow-lg:0 10px 25px rgba(15,23,42,.1);
+  }
+  html,body{background:var(--bg);color:var(--text);
+    font-family:'Public Sans',-apple-system,sans-serif;
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1280px;margin:0 auto;padding:24px}
+  header{background:var(--white);border:1px solid var(--border);
+    border-radius:12px;padding:24px 28px;margin-bottom:20px;box-shadow:var(--shadow-sm)}
+  .header-top{display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:8px;flex-wrap:wrap;gap:12px}
+  h1{font-size:26px;font-weight:700;letter-spacing:-.02em}
+  .date-badge{background:var(--primary-light);color:var(--primary);
+    padding:6px 12px;border-radius:8px;font-size:13px;font-weight:600}
+  .subtitle{color:var(--text-soft);font-size:14px}
+
+  #status-bar{padding:12px 16px;border-radius:8px;margin-bottom:16px;
+    font-size:14px;display:none;align-items:center;gap:10px}
+  #status-bar.loading{background:var(--primary-light);color:var(--primary);display:flex}
+  #status-bar.success{background:var(--success-light);color:var(--success);display:flex}
+  #status-bar.error{background:#fee2e2;color:#991b1b;display:flex}
+  .spinner{width:16px;height:16px;border:2px solid rgba(0,0,0,.1);
+    border-top-color:currentColor;border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  .stat{background:var(--white);border:1px solid var(--border);
+    border-radius:10px;padding:16px 18px;box-shadow:var(--shadow-sm)}
+  .stat-label{font-size:12px;color:var(--text-mute);font-weight:500;
+    margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em}
+  .stat-value{font-size:24px;font-weight:700;letter-spacing:-.02em}
+
+  .filters{background:var(--white);border:1px solid var(--border);
+    border-radius:12px;padding:20px 24px;margin-bottom:20px;box-shadow:var(--shadow-sm)}
+  .filters-title{font-size:13px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.05em;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .filters-title::before{content:"";width:4px;height:16px;
+    background:var(--primary);border-radius:2px}
+  .filters-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:12px;font-weight:600;color:var(--text-soft)}
+  .field input,.field select{background:var(--white);border:1.5px solid var(--border);
+    border-radius:8px;padding:9px 12px;font-size:14px;font-family:inherit;
+    color:var(--text);outline:none;transition:.15s}
+  .field input:focus,.field select:focus{border-color:var(--primary);
+    box-shadow:0 0 0 3px var(--primary-light)}
+  .clear-btn{margin-top:14px;background:transparent;border:none;color:var(--primary);
+    font-size:13px;font-weight:600;cursor:pointer;padding:6px 0}
+  .clear-btn:hover{text-decoration:underline}
+
+  .results-bar{display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:16px;flex-wrap:wrap;gap:12px}
+  .results-count{font-size:16px;font-weight:600}
+  .results-count span{color:var(--primary)}
+  .sort-wrapper{display:flex;align-items:center;gap:8px}
+  .sort-wrapper label{font-size:13px;color:var(--text-soft);font-weight:500}
+  .sort-select{background:var(--white);border:1.5px solid var(--border);
+    border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;
+    cursor:pointer;font-weight:500}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+  .card{background:var(--white);border:1px solid var(--border);
+    border-radius:12px;overflow:hidden;cursor:pointer;
+    transition:.15s;display:flex;flex-direction:column;box-shadow:var(--shadow-sm)}
+  .card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--primary)}
+  .card-top{padding:16px 18px 0;display:flex;justify-content:space-between;
+    align-items:flex-start;gap:10px;flex-wrap:wrap}
+  .badge{font-size:11px;font-weight:700;padding:4px 8px;border-radius:6px;
+    text-transform:uppercase;letter-spacing:.04em}
+  .badge.activa{background:var(--success-light);color:var(--success)}
+  .badge.proxima{background:var(--warning-light);color:var(--warning)}
+  .badge.finalizada{background:var(--neutral-light);color:var(--neutral)}
+  .type-tag{font-size:12px;font-weight:600;color:var(--text-soft)}
+  .card-body{padding:12px 18px 16px;flex:1}
+  .card-title{font-size:17px;font-weight:700;line-height:1.3;margin-bottom:8px}
+  .card-loc{font-size:13px;color:var(--text-soft);margin-bottom:12px;
+    display:flex;align-items:center;gap:5px;font-weight:500}
+  .card-loc::before{content:"📍"}
+  .card-desc{font-size:13px;color:var(--text-soft);line-height:1.5;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .card-foot{background:var(--bg);padding:14px 18px;border-top:1px solid var(--border);
+    display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .price-block{display:flex;flex-direction:column;gap:2px}
+  .price-label{font-size:11px;color:var(--text-mute);font-weight:600;
+    text-transform:uppercase;letter-spacing:.03em}
+  .price{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:100;
+    display:none;align-items:flex-start;justify-content:center;padding:24px;
+    overflow-y:auto;backdrop-filter:blur(2px)}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--white);border-radius:14px;max-width:680px;width:100%;
+    margin:auto;overflow:hidden;box-shadow:0 20px 60px rgba(15,23,42,.3)}
+  .modal-header{padding:24px 28px 20px;border-bottom:1px solid var(--border);position:relative}
+  .modal-close{position:absolute;top:18px;right:20px;background:var(--neutral-light);
+    border:none;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;
+    color:var(--text-soft);font-weight:700;display:flex;align-items:center;justify-content:center}
+  .modal-close:hover{background:var(--border-strong);color:var(--text)}
+  .modal-tag{display:inline-block;font-size:12px;font-weight:600;color:var(--primary);
+    background:var(--primary-light);padding:4px 10px;border-radius:6px;margin-bottom:10px}
+  .modal h2{font-size:24px;font-weight:700;line-height:1.25;margin-bottom:6px;
+    padding-right:40px;letter-spacing:-.02em}
+  .modal-loc{font-size:14px;color:var(--text-soft);font-weight:500}
+  .modal-body{padding:24px 28px}
+  .modal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px}
+  .modal-cell{background:var(--bg);border:1px solid var(--border);
+    padding:14px 16px;border-radius:10px}
+  .modal-cell-label{font-size:11px;color:var(--text-mute);font-weight:600;
+    text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+  .modal-cell-value{font-size:18px;font-weight:700}
+  .modal-section{margin-bottom:20px}
+  .modal-section-title{font-size:13px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.04em;margin-bottom:8px}
+  .modal-text{font-size:14px;color:var(--text-soft);line-height:1.6}
+  .modal-tip{background:var(--primary-light);border:1px solid #c7d8fc;
+    border-radius:10px;padding:14px 16px;font-size:13px;line-height:1.55}
+  .modal-tip a{color:var(--primary);font-weight:600;text-decoration:none}
+  .modal-tip a:hover{text-decoration:underline}
+  .modal-actions{padding:18px 28px 24px;border-top:1px solid var(--border);
+    display:flex;gap:10px;flex-wrap:wrap;background:var(--bg)}
+  .btn{padding:10px 18px;font-size:13px;font-weight:600;border-radius:8px;
+    cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;
+    gap:6px;border:none;font-family:inherit;transition:.15s}
+  .btn-primary{background:var(--primary);color:white}
+  .btn-primary:hover{background:var(--primary-dark)}
+  .btn-secondary{background:var(--white);color:var(--text);border:1.5px solid var(--border)}
+  .btn-secondary:hover{border-color:var(--primary);color:var(--primary)}
+
+  .empty{grid-column:1/-1;text-align:center;padding:64px 24px;
+    background:var(--white);border:1px dashed var(--border-strong);border-radius:12px}
+  .empty h3{font-size:18px;font-weight:700;margin-bottom:6px}
+  .empty p{color:var(--text-soft);font-size:14px}
+
+  footer{margin-top:28px;padding:20px;text-align:center;
+    color:var(--text-mute);font-size:13px;line-height:1.6}
+  footer a{color:var(--primary);text-decoration:none;font-weight:600}
+  footer a:hover{text-decoration:underline}
+
+  @media (max-width:768px){
+    .wrap{padding:16px}.stats{grid-template-columns:repeat(2,1fr)}
+    .modal-grid{grid-template-columns:1fr}h1{font-size:22px}.modal{margin:0}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="header-top">
+      <h1>Subastas BOE · Euskadi</h1>
+      <div class="date-badge" id="last-update">Cargando...</div>
+    </div>
+    <div class="subtitle">Pisos, locales y otros inmuebles en subasta judicial · Actualización automática cada 3 días</div>
+  </header>
+
+  <div id="status-bar"></div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Resultados</div><div class="stat-value" id="stat-total">—</div></div>
+    <div class="stat"><div class="stat-label">Precio mínimo</div><div class="stat-value" id="stat-min">—</div></div>
+    <div class="stat"><div class="stat-label">Precio mediano</div><div class="stat-value" id="stat-avg">—</div></div>
+    <div class="stat"><div class="stat-label">Total descargado</div><div class="stat-value" id="stat-active">—</div></div>
+  </div>
+
+  <div class="filters">
+    <div class="filters-title">Filtros</div>
+    <div class="filters-grid">
+      <div class="field"><label>Buscar</label><input type="text" id="search" placeholder="Calle, descripción..."></div>
+      <div class="field"><label>Provincia</label><select id="prov"><option value="">Todas</option><option value="Bizkaia">Bizkaia</option><option value="Gipuzkoa">Gipuzkoa</option><option value="Álava">Álava</option></select></div>
+      <div class="field"><label>Municipio</label><select id="muni"><option value="">Todos</option></select></div>
+      <div class="field"><label>Tipo de inmueble</label><select id="tipo"><option value="">Todos</option></select></div>
+      <div class="field"><label>Precio máximo (€)</label><input type="number" id="precio" placeholder="ej. 150000"></div>
+    </div>
+    <button class="clear-btn" id="clear">↻ Limpiar todos los filtros</button>
+  </div>
+
+  <div class="results-bar">
+    <div class="results-count">Mostrando <span id="r-count">0</span> resultados</div>
+    <div class="sort-wrapper"><label>Ordenar:</label>
+      <select id="sort" class="sort-select">
+        <option value="price-asc">Precio: menor a mayor</option>
+        <option value="price-desc">Precio: mayor a menor</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    Datos extraídos automáticamente del <a href="https://subastas.boe.es/" target="_blank">Portal de Subastas del BOE</a> · 
+    Repositorio en <a href="#" id="repo-link" target="_blank">GitHub</a><br>
+    No constituye asesoramiento legal ni financiero · Verifica siempre la información en la fuente oficial
+  </footer>
+</div>
+
+<div class="modal-bg" id="modal-bg"><div class="modal" id="modal-content"></div></div>
+
+<script>
+let SUBASTAS = [];
+
+function setStatus(msg, type){
+  const bar = document.getElementById('status-bar');
+  bar.className = type;
+  bar.innerHTML = type === 'loading' ? `<div class="spinner"></div> ${msg}` : msg;
+}
+
+async function cargarDatos(){
+  setStatus('Cargando subastas del BOE...', 'loading');
+  try {
+    const res = await fetch('subastas.json?t=' + Date.now());
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    SUBASTAS = data.subastas || [];
+    document.getElementById('last-update').textContent = 'Actualizado: ' + (data.fecha_legible || data.actualizado.slice(0,10));
+    document.getElementById('stat-active').textContent = data.total;
+    setStatus(`✓ ${data.total} subastas cargadas`, 'success');
+    setTimeout(() => document.getElementById('status-bar').style.display = 'none', 2000);
+    poblarTipos();
+    actualizarMunicipios();
+    filtrar();
+  } catch(e) {
+    setStatus(`✗ No se pudieron cargar los datos. ¿El JSON está publicado? (${e.message})`, 'error');
+    SUBASTAS = [];
+    filtrar();
+  }
+}
+
+function poblarTipos(){
+  const tipos = [...new Set(SUBASTAS.map(s => s.tipo_bien).filter(Boolean))].sort();
+  const sel = document.getElementById('tipo');
+  sel.innerHTML = '<option value="">Todos</option>' + tipos.map(t => `<option value="${t}">${t}</option>`).join('');
+}
+
+function actualizarMunicipios(){
+  const prov = document.getElementById('prov').value;
+  const muniSel = document.getElementById('muni');
+  const munis = [...new Set(SUBASTAS.filter(s => !prov || s.provincia === prov).map(s => s.localidad).filter(Boolean))].sort();
+  muniSel.innerHTML = '<option value="">Todos</option>' + munis.map(m => `<option value="${m}">${m}</option>`).join('');
+}
+
+const fmt = n => n != null ? new Intl.NumberFormat('es-ES').format(Math.round(n)) + ' €' : '—';
+const fmtShort = n => {
+  if(n == null) return '—';
+  if(n >= 1000000) return (n/1000000).toFixed(1) + 'M €';
+  if(n >= 1000) return Math.round(n/1000) + 'k €';
+  return Math.round(n) + ' €';
+};
+
+function filtrar(){
+  const search = document.getElementById('search').value.toLowerCase();
+  const prov = document.getElementById('prov').value;
+  const muni = document.getElementById('muni').value;
+  const tipo = document.getElementById('tipo').value;
+  const precioMax = parseInt(document.getElementById('precio').value) || Infinity;
+  const sortMode = document.getElementById('sort').value;
+
+  let filtrados = SUBASTAS.filter(s => {
+    const texto = ((s.descripcion||'') + ' ' + (s.localidad||'') + ' ' + (s.direccion||'') + ' ' + (s.id||'')).toLowerCase();
+    if(search && !texto.includes(search)) return false;
+    if(prov && s.provincia !== prov) return false;
+    if(muni && s.localidad !== muni) return false;
+    if(tipo && s.tipo_bien !== tipo) return false;
+    if(s.valor_subasta != null && s.valor_subasta > precioMax) return false;
+    return true;
+  });
+
+  if(sortMode === 'price-asc') filtrados.sort((a,b) => (a.valor_subasta||Infinity) - (b.valor_subasta||Infinity));
+  if(sortMode === 'price-desc') filtrados.sort((a,b) => (b.valor_subasta||0) - (a.valor_subasta||0));
+
+  render(filtrados);
+  updateStats(filtrados);
+}
+
+function updateStats(list){
+  document.getElementById('stat-total').textContent = list.length;
+  document.getElementById('r-count').textContent = list.length;
+  if(list.length === 0){
+    document.getElementById('stat-min').textContent = '—';
+    document.getElementById('stat-avg').textContent = '—';
+    return;
+  }
+  const precios = list.map(s => s.valor_subasta).filter(p => p != null).sort((a,b) => a-b);
+  document.getElementById('stat-min').textContent = fmtShort(precios[0]);
+  document.getElementById('stat-avg').textContent = fmtShort(precios[Math.floor(precios.length/2)]);
+}
+
+function render(list){
+  const grid = document.getElementById('grid');
+  if(list.length === 0){
+    grid.innerHTML = `<div class="empty"><h3>No hay resultados</h3><p>Prueba a relajar los filtros o limpiarlos</p></div>`;
+    return;
+  }
+  grid.innerHTML = list.map((s,i) => {
+    const titulo = s.direccion || s.tipo_bien || 'Inmueble en subasta';
+    const desc = s.descripcion || 'Sin descripción disponible. Consulta el detalle en el BOE.';
+    return `
+      <div class="card" data-idx="${i}">
+        <div class="card-top">
+          <div class="type-tag">${s.tipo_bien || 'Inmueble'}</div>
+          <div class="badge activa">● En puja</div>
+        </div>
+        <div class="card-body">
+          <div class="card-title">${titulo}</div>
+          <div class="card-loc">${s.localidad || '—'}, ${s.provincia || ''}</div>
+          <div class="card-desc">${desc}</div>
+        </div>
+        <div class="card-foot">
+          <div class="price-block">
+            <div class="price-label">Valor de subasta</div>
+            <div class="price">${fmt(s.valor_subasta)}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  document.querySelectorAll('.card').forEach((c,i) => c.addEventListener('click', () => abrirModal(list[parseInt(c.dataset.idx)])));
+}
+
+function abrirModal(s){
+  const titulo = s.direccion || s.tipo_bien || 'Inmueble en subasta';
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-header">
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+      <div class="modal-tag">${s.tipo_bien || 'Inmueble'} · En puja activa</div>
+      <h2>${titulo}</h2>
+      <div class="modal-loc">${s.localidad || '—'}, ${s.provincia || ''} · ${s.id}</div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <div class="modal-cell"><div class="modal-cell-label">Valor de subasta</div><div class="modal-cell-value">${fmt(s.valor_subasta)}</div></div>
+        <div class="modal-cell"><div class="modal-cell-label">Depósito</div><div class="modal-cell-value">${fmt(s.deposito)}</div></div>
+        ${s.fecha_inicio ? `<div class="modal-cell"><div class="modal-cell-label">Inicio puja</div><div class="modal-cell-value" style="font-size:14px">${s.fecha_inicio}</div></div>` : ''}
+        ${s.fecha_fin ? `<div class="modal-cell"><div class="modal-cell-label">Fin puja</div><div class="modal-cell-value" style="font-size:14px">${s.fecha_fin}</div></div>` : ''}
+        ${s.cp ? `<div class="modal-cell"><div class="modal-cell-label">Código postal</div><div class="modal-cell-value" style="font-size:15px">${s.cp}</div></div>` : ''}
+        ${s.ref_catastral ? `<div class="modal-cell"><div class="modal-cell-label">Ref. catastral</div><div class="modal-cell-value" style="font-size:13px;font-family:monospace">${s.ref_catastral}</div></div>` : ''}
+      </div>
+      ${s.descripcion ? `<div class="modal-section"><div class="modal-section-title">Descripción</div><div class="modal-text">${s.descripcion}</div></div>` : ''}
+      <div class="modal-tip">
+        <strong>Antes de pujar:</strong> pide la nota simple en <a href="https://www.registradores.org/" target="_blank">registradores.org</a> (9,02 €). Verifica en <a href="https://www.sedecatastro.gob.es/" target="_blank">Catastro</a>. Las cargas anteriores se asumen tras la adjudicación.
+      </div>
+    </div>
+    <div class="modal-actions">
+      <a class="btn btn-primary" href="${s.url || s.url_busqueda}" target="_blank">Ver en BOE oficial →</a>
+      ${s.ref_catastral ? `<a class="btn btn-secondary" href="https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCConCiud.aspx?RefC=${s.ref_catastral}" target="_blank">Ver en Catastro</a>` : ''}
+      <a class="btn btn-secondary" href="https://www.idealista.com/venta-viviendas/${(s.localidad||'').toLowerCase().replace(/\s+/g,'-')}/" target="_blank">Mercado en Idealista</a>
+    </div>
+  `;
+  document.getElementById('modal-bg').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function cerrarModal(){ document.getElementById('modal-bg').classList.remove('open'); document.body.style.overflow=''; }
+document.getElementById('modal-bg').addEventListener('click', e => { if(e.target.id === 'modal-bg') cerrarModal(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') cerrarModal(); });
+
+['search','prov','muni','tipo','precio','sort'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', filtrar);
+  el.addEventListener('change', filtrar);
+});
+document.getElementById('prov').addEventListener('change', () => { actualizarMunicipios(); filtrar(); });
+document.getElementById('clear').addEventListener('click', () => {
+  ['search','prov','muni','tipo','precio'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('sort').value = 'price-asc';
+  actualizarMunicipios(); filtrar();
+});
+
+cargarDatos();
+</script>
+</body>
+</html>
